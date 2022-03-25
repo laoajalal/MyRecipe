@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".RecipeFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="recipe" />
+        android:orientation="vertical"
+        >
 
-</FrameLayout>
+        <androidx.viewpager2.widget.ViewPager2
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:id="@+id/viewpager_fragment_recipe"
+            />
+
+        <com.google.android.material.tabs.TabLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/tab_layout_fragment_recipe" />
+
+
+    </LinearLayout>
+

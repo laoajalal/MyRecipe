@@ -7,16 +7,20 @@
 
     <fragment
         android:id="@+id/mainFragment"
-        android:name="com.laoa.myrecipe.MainFragment"
+        android:name="com.laoa.myrecipe.controller.MainFragment"
         android:label="fragment_main"
         tools:layout="@layout/fragment_main" >
         <action
             android:id="@+id/action_mainFragment_to_recipeListFragment"
-            app:destination="@id/recipeListFragment" />
+            app:destination="@id/recipeListFragment">
+        </action>
+        <action
+            android:id="@+id/action_mainFragment_to_recipeAddFragment"
+            app:destination="@id/recipeAddFragment" />
     </fragment>
     <fragment
         android:id="@+id/recipeListFragment"
-        android:name="com.laoa.myrecipe.RecipeListFragment"
+        android:name="com.laoa.myrecipe.controller.RecipeListFragment"
         android:label="fragment_recipe_list"
         tools:layout="@layout/fragment_recipe_list" >
         <action
@@ -25,10 +29,38 @@
         <action
             android:id="@+id/action_recipeListFragment_to_mainFragment"
             app:destination="@id/mainFragment" />
+        <argument
+            android:name="getCategory"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
     <fragment
         android:id="@+id/recipeFragment"
-        android:name="com.laoa.myrecipe.RecipeFragment"
+        android:name="com.laoa.myrecipe.controller.SingleRecipeDisplay.RecipeFragment"
         android:label="fragment_recipe"
-        tools:layout="@layout/fragment_recipe" />
+        tools:layout="@layout/fragment_recipe" >
+        <action
+            android:id="@+id/action_recipeFragment_to_recipeListFragment"
+            app:destination="@id/recipeListFragment" />
+        <argument
+            android:name="getCategory"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="getUUID"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
+    <dialog
+        android:id="@+id/recipeAddFragment"
+        android:name="com.laoa.myrecipe.controller.RecipeAddFragment"
+        android:label="RecipeAddFragment"
+        tools:layout="@layout/recipe_add">
+        <action
+            android:id="@+id/action_recipeAddFragment_to_mainFragment"
+            app:destination="@id/mainFragment" />
+    </dialog>
 </navigation>

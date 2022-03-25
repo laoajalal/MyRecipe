@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <androidx.cardview.widget.CardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/cardView"
+        android:layout_width="match_parent"
+        android:layout_height="450dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="10dp"
+        app:cardMaxElevation="12dp"
+        app:cardPreventCornerOverlap="true"
+        app:cardUseCompatPadding="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+
+            <ViewFlipper
+                android:id="@+id/single_food_viewFlipper"
+                android:background="@drawable/image_icon"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                app:layout_constraintHorizontal_bias="1.0"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/single_food_name"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+            </ViewFlipper>
+
+            <TextView
+                android:id="@+id/single_food_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:text="@string/food"
+                android:textSize="32sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/single_food_viewFlipper" />
+
+            <ScrollView
+                android:id="@+id/single_food_scrollview"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:nestedScrollingEnabled="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/single_food_viewFlipper"
+                app:layout_constraintStart_toStartOf="@+id/single_food_viewFlipper"
+                app:layout_constraintTop_toBottomOf="@+id/single_food_name">
+
+                <TextView
+                    android:id="@+id/single_food_description"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:textAlignment="textStart"
+                    android:ems="15"
+                    android:maxLines="20"
+                    android:layout_margin="8dp"
+                    android:scrollbars="vertical" />
+            </ScrollView>
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
+
+
+
+
