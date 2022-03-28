@@ -20,6 +20,7 @@
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:id="@+id/label_popUp_window_remove"
                 android:text="Remove Picture"
                 android:gravity="center"
                 />

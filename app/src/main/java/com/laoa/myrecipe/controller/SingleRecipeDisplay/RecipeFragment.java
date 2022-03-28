@@ -1,19 +1,33 @@
 package com.laoa.myrecipe.controller.SingleRecipeDisplay;
 
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.laoa.myrecipe.ActionBarTitleSetter;
+import com.laoa.myrecipe.R;
+import com.laoa.myrecipe.controller.MainFragmentDirections;
 import com.laoa.myrecipe.databinding.FragmentRecipeBinding;
 import com.laoa.myrecipe.models.Recipe;
 import com.laoa.myrecipe.models.RecipeManager;
@@ -41,10 +55,51 @@ public class RecipeFragment extends Fragment {
         // Required empty public constructor
     }
 
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        //super.onCreateOptionsMenu(R.menu.recipe_list_toolbar, inflater);
+        inflater.inflate(R.menu.single_recipe_toolbar, menu);
+    }
+
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.app_bar_remove_item:
+                removeRecipe();
+                return true;
+            case R.id.app_bar_modify:
+                modifyRecipe();
+                return true;
+            case R.id.app_bar_favourite:
+                setRecipeToFavorite();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void setRecipeToFavorite() {
+    }
+
+    private void modifyRecipe() {
+        RecipeFragmentDirections.ActionRecipeFragmentToRecipeModifyFragment destination = RecipeFragmentDirections.actionRecipeFragmentToRecipeModifyFragment();
+        destination.setCategory(mCategory);
+        destination.setUid(mUUID);
+        Navigation.findNavController(mViewBinder.getRoot()).navigate(destination);
+    }
+
+    private void removeRecipe() {
+        popUpWindowRemoveRecipe();
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(@NonNull Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -58,8 +113,24 @@ public class RecipeFragment extends Fragment {
         mCategory = RecipeFragmentArgs.fromBundle(getArguments()).getGetCategory();
         mUUID = RecipeFragmentArgs.fromBundle(getArguments()).getGetUUID();
 
+        ((ActionBarTitleSetter)getActivity()).setTitleActionBar(mCategory);
+
         mRecipe = mRecipeManager.getRecipe(mCategory, UUID.fromString(mUUID));
+
+        Observer<UUID> modifiedRecipe = new Observer<UUID>() {
+            @Override
+            public void onChanged(UUID uuid) {
+                if (mRecipe.getUuid().compareTo(uuid) == 0)
+                {
+                    mRecipe = mRecipeManager.getRecipe(uuid);
+                    ((ActionBarTitleSetter)requireActivity()).setTitleActionBar(mRecipe.getTypeOfFood());
+                }
+
+            }
+        };
+        mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(),modifiedRecipe);
         mViewPager2 = mViewBinder.viewpagerFragmentRecipe;
+
 
         return view;
     }
@@ -69,26 +140,38 @@ public class RecipeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         mPageAdapterRecipe = new PageAdapterRecipe(getChildFragmentManager(), getLifecycle(), mRecipe);
         mViewPager2.setAdapter(mPageAdapterRecipe);
+        TabLayout tabLayout = view.findViewById(R.id.tab_layout_fragment_recipe);
+        new TabLayoutMediator(tabLayout, mViewPager2, (tab, position) -> {
+            if (position == 0)
+                tab.setText("Overview");
+            else if (position == 1)
+                tab.setText("Ingredients");
+            else if (position == 2)
+                tab.setText("Steps");
+        }).attach();
+
     }
 
-    public static class RecipeIngredientsFragment extends Fragment {
+    private void popUpWindowRemoveRecipe() {
+        View popUp = LayoutInflater.from(getActivity()).inflate(R.layout.popup_window_remove, null);
+        final PopupWindow popupWindow = new PopupWindow(
+                popUp, ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        popupWindow.setFocusable(true);
+        popupWindow.showAtLocation(getView(), Gravity.CENTER,0,0);
+        TextView label = popUp.findViewById(R.id.label_popUp_window_remove);
+        label.setText("Remove Recipe");
+        Button remove = popUp.findViewById(R.id.remove_button_popUp);
+        Button dismiss = popUp.findViewById(R.id.dismiss_popUp);
 
-        @Nullable
-        @Override
-        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-            return super.onCreateView(inflater, container, savedInstanceState);
-        }
-    }
+        dismiss.setOnClickListener(view1 -> { popupWindow.dismiss();});
 
-    public static class RecipeStepsFragment extends Fragment {
-
-        @Nullable
-        @Override
-        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-            return super.onCreateView(inflater, container, savedInstanceState);
-
-        }
-
+        remove.setOnClickListener(view12 -> {
+            mRecipeManager.removeRecipe(mRecipe);
+            popupWindow.dismiss();
+            Navigation.findNavController(mViewBinder.getRoot()).popBackStack();
+        });
     }
 
 
@@ -104,6 +187,7 @@ public class RecipeFragment extends Fragment {
 
     }
 
+
     @NonNull
     @Override
     public Fragment createFragment(int position) {
@@ -114,13 +198,13 @@ public class RecipeFragment extends Fragment {
 
         }
         else if (position == 1) {
-            RecipeFragment.RecipeIngredientsFragment ingredientsFragment = new RecipeFragment.RecipeIngredientsFragment();
+            RecipeIngredientFragment ingredientsFragment = new RecipeIngredientFragment();
             prepareArgs(ingredientsFragment);
             return ingredientsFragment;
 
         }
         else if (position == 2) {
-            RecipeFragment.RecipeStepsFragment stepsFragment = new RecipeFragment.RecipeStepsFragment();
+            RecipeStepsFragment stepsFragment = new RecipeStepsFragment();
             prepareArgs(stepsFragment);
             return stepsFragment;
         }
@@ -140,6 +224,9 @@ public class RecipeFragment extends Fragment {
     }
 
 }
+
+
+
 
 
 

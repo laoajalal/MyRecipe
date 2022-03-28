@@ -23,32 +23,44 @@ public class RecipeManager extends AndroidViewModel {
     private LiveData<List<Recipe>> mListLiveDataRecipes;
     private MutableLiveData<List<String>> categories;
     private MutableLiveData<Boolean> addedEvent;
+    private MutableLiveData<UUID> recipeModified;
+
+    private MutableLiveData<Boolean> removedRecipe;
 
     public RecipeManager(Application application) {
         super(application);
+        mRecipeRepository = new RecipeRepository(application);
         listOfRecipes = new ArrayList<>();
         mapOfTypeOfRecipes = new HashMap<>();
         categories = new MutableLiveData<>();
         categories.setValue(new ArrayList<>());
         mListLiveDataRecipes = new MutableLiveData<>();
-        mRecipeRepository = new RecipeRepository(application);
         addedEvent = new MutableLiveData<>();
-
+        recipeModified = new MutableLiveData<>();
+        removedRecipe = new MutableLiveData<>();
     }
 
+
+
     public void getFirstRecipeOut() {
-        List<Recipe> temp = mRecipeRepository.getAllRecipes();
-
-        for (Recipe recipe:temp) {
-            if (recipe.getFoodImagePaths().size()>0)
-                System.out.println("Loading from DB"+ recipe.getFoodImagePaths().get(0));
-
+        List<Recipe> temp = mRecipeRepository.getAllRecipes() != null? mRecipeRepository.getAllRecipes() : null;
+        System.out.println("size of DB" + temp.size());
+        for (Recipe recipe: temp) {
+            System.out.println("Loading from DB"+ recipe.getRecipeName());
         }
 
     }
 
     public void setAddedEvent(Boolean add) {
         addedEvent.setValue(add);
+    }
+
+    private void setHasModifiedRecipe(UUID id) {
+        recipeModified.setValue(id);
+    }
+
+    public MutableLiveData<UUID> getRecipeModified() {
+        return recipeModified;
     }
 
     public MutableLiveData<Boolean> getAddedEvent() {return addedEvent;}
@@ -62,10 +74,41 @@ public class RecipeManager extends AndroidViewModel {
         mapOfTypeOfRecipes.putIfAbsent(category, new ArrayList<>());
     }
 
-
     public void deleteAllDB() {
         if (mRecipeRepository!=null)
             mRecipeRepository.deleteAll();
+    }
+
+    public void modifiedRecipe(Recipe recipe, String oldCategory) {
+
+        // No change in hashmap, only notify the listeners that uses particular recipe
+        // if recipe has changed otherwise.
+        if (recipe.getTypeOfFood().equals(oldCategory)) {
+            recipeModified.setValue(recipe.getUuid());
+            return;
+        }
+        // Recipe has changed category (and maybe other fields). Has to update Hashmap.
+        else {
+            for (String category: mapOfTypeOfRecipes.keySet()) {
+                if (category.equals(oldCategory))
+                    mapOfTypeOfRecipes.get(category).remove(recipe);
+            }
+            mapOfTypeOfRecipes.get(recipe.getTypeOfFood()).add(recipe);
+            recipeModified.setValue(recipe.getUuid());
+        }
+
+    }
+
+    public MutableLiveData<Boolean> getRemovedRecipe() {
+        return removedRecipe;
+    }
+
+    public boolean removeRecipe(Recipe recipe) {
+        if (mapOfTypeOfRecipes.get(recipe.getTypeOfFood()).remove(recipe)) {
+            removedRecipe.setValue(true);
+            return true;
+        }
+        return false;
     }
 
     public void addRecipe(Recipe recipe) {
@@ -111,22 +154,34 @@ public class RecipeManager extends AndroidViewModel {
             return mapOfTypeOfRecipes.get(typeOfFood);
         }
 
-        for (Recipe recipe:listOfRecipes) {
-            if (recipe.getTypeOfFood().equals(typeOfFood)) {
-                specificTypeOfRecipes.add(recipe);
-            }
-        }
-        mapOfTypeOfRecipes.put(typeOfFood, specificTypeOfRecipes);
-        return specificTypeOfRecipes;
+        return null;
     }
 
     public Map<String, List<Recipe>> getRecipiesCategory() {
         return mapOfTypeOfRecipes;
     }
 
+
+    /**
+     *
+     * */
     public Recipe getRecipe(String category, UUID id) {
         if (mapOfTypeOfRecipes.containsKey(category)) {
             for (Recipe recipe: mapOfTypeOfRecipes.get(category)) {
+                if (recipe.getUuid().compareTo(id) == 0)
+                    return recipe;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Slower then the other alternative with (string,uuid) as alternative
+     * However, is safe to use if the category of the recipe has been modified
+     * */
+    public Recipe getRecipe(UUID id) {
+        for (List<Recipe> recipes: mapOfTypeOfRecipes.values()) {
+            for (Recipe recipe : recipes) {
                 if (recipe.getUuid().compareTo(id) == 0)
                     return recipe;
             }

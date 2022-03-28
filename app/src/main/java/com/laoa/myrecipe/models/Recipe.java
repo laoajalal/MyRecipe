@@ -39,6 +39,8 @@ public class Recipe {
     @ColumnInfo(name = "recipe_steps")
     private List<String> recipeSteps;
 
+    private boolean isFavourite;
+
     public String getTypeOfFood() {
         return typeOfFood;
     }
@@ -47,7 +49,13 @@ public class Recipe {
         this.typeOfFood = typeOfFood;
     }
 
+    public boolean isFavourite() {
+        return isFavourite;
+    }
 
+    public void setFavourite(boolean favourite) {
+        isFavourite = favourite;
+    }
 
     private UUID uuid;
 

@@ -19,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -73,8 +74,8 @@ public class RecipeAddFragment extends DialogFragment {
     private Spinner mCategory;
     private ArrayAdapter mSpinnerAdapter;
 
-    private RecipeManager mRecipeManager;
-    private ImageFlipperHandler mImageFlipperHandler;
+    public RecipeManager mRecipeManager;
+    public ImageFlipperHandler mImageFlipperHandler;
 
     private File currentFile;
 
@@ -155,12 +156,22 @@ public class RecipeAddFragment extends DialogFragment {
 
     public void setSaveButtonListener() {
         mSaveButton.setOnClickListener(view -> {
+            if (checkInput())
+            {
+                onSavedPressed();
+            }
+        });
+
+    }
+
+    /**
+     * When save button pressed, adds the recipe to the recipeManager and pops stack.
+     * */
+    public void onSavedPressed() {
             mRecipeManager.addRecipe(getSavedRecipe());
             mRecipeManager.setAddedEvent(true);
             mImageFlipperHandler.reset();
             NavHostFragment.findNavController(RecipeAddFragment.this).popBackStack();
-        });
-
     }
 
     public void setCancelButtonListener() {
@@ -170,6 +181,28 @@ public class RecipeAddFragment extends DialogFragment {
         });
     }
 
+
+    private boolean checkInput() {
+        String time = mCookTime.getText().toString();
+        Boolean isValid = true;
+        if(!time.chars().allMatch( Character::isDigit))
+        {
+            isValid = false;
+            mCookTime.setError("Input valid time!");
+        }
+        if (mRecipeName.getText().length()<=0)
+        {
+            isValid = false;
+            mRecipeName.setError("Insert recipe name!");
+        }
+        if (getTypeOfFood().equals(""))
+        {
+            isValid = false;
+            Toast.makeText(getActivity(),"Set type!",Toast.LENGTH_SHORT).show();
+        }
+
+        return isValid;
+    }
 
     public Recipe getSavedRecipe() {
         Recipe recipe = new Recipe();
@@ -183,7 +216,7 @@ public class RecipeAddFragment extends DialogFragment {
         return recipe;
     }
 
-    private List<String> getEditTextInputAsList(EditText component) {
+    public List<String> getEditTextInputAsList(EditText component) {
         Editable text = component.getText();
         if (text.toString().length() > 0) {
             List<String> ingredients = new ArrayList<>(Arrays.asList(text.toString().split(System.lineSeparator())));
@@ -208,12 +241,14 @@ public class RecipeAddFragment extends DialogFragment {
         if (mCategory.getSelectedItem() != null)
             return mCategory.getSelectedItem().toString();
         return "";
+
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         mViewFlipper = null;
+        mImageFlipperHandler.reset();
         viewBinder = null;
     }
 
@@ -225,7 +260,6 @@ public class RecipeAddFragment extends DialogFragment {
     private void configureSpinnerAdapter(List<String> categories) {
         mSpinnerAdapter = new ArrayAdapter(getActivity(),
                 android.R.layout.simple_spinner_item, categories);
-        //mSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSpinnerAdapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item);
         mCategory.setAdapter(mSpinnerAdapter);
         mCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -437,4 +471,31 @@ public class RecipeAddFragment extends DialogFragment {
     }
 
 
+    public EditText getmRecipeName() {
+        return mRecipeName;
+    }
+
+    public EditText getmCookTime() {
+        return mCookTime;
+    }
+
+    public EditText getmIngredients() {
+        return mIngredients;
+    }
+
+    public EditText getmSteps() {
+        return mSteps;
+    }
+
+    public EditText getmDescription() {
+        return mDescription;
+    }
+
+    public Spinner getmCategory() {
+        return mCategory;
+    }
+
+    public ArrayAdapter getmSpinnerAdapter() {
+        return mSpinnerAdapter;
+    }
 }

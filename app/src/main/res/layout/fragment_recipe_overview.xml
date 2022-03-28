@@ -17,6 +17,30 @@
         android:layout_height="wrap_content"
         tools:context=".controller.SingleRecipeDisplay.RecipeFragment">
 
+
+        <ImageView
+            android:id="@+id/leftArrow_changePicture"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:forceHasOverlappingRendering="true"
+            android:src="@drawable/left_arrow"
+            android:translationZ="90dp"
+            app:layout_constraintBottom_toBottomOf="@+id/fragment_recipe_viewFlipper"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/rightArrow_changePicture"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:forceHasOverlappingRendering="true"
+            android:src="@drawable/right_arrow"
+            android:translationZ="90dp"
+
+            app:layout_constraintBottom_toBottomOf="@+id/fragment_recipe_viewFlipper"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <ViewFlipper
             android:id="@+id/fragment_recipe_viewFlipper"
             android:layout_width="match_parent"

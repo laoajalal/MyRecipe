@@ -3,11 +3,13 @@ package com.laoa.myrecipe.controller;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +26,7 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.laoa.myrecipe.ActionBarTitleSetter;
 import com.laoa.myrecipe.R;
 import com.laoa.myrecipe.databinding.FragmentRecipeListBinding;
@@ -43,7 +46,7 @@ public class RecipeListFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+        //setHasOptionsMenu(true);
     }
 
     @Override
@@ -149,13 +152,15 @@ public class RecipeListFragment extends Fragment {
         }
 
         private void setImages(Recipe recipe) {
+
             if (recipe.getFoodImagePaths().size()>0) {
                 mViewFlipper.setBackground(null);
                 for (String path: recipe.getFoodImagePaths()) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(path);
                     ImageView image = new ImageView(getActivity());
-                    image.setScaleType(ImageView.ScaleType.FIT_XY);
-                    image.setImageBitmap(bitmap);
+                    Glide.with(getActivity())
+                            .load(path)
+                            .centerCrop()
+                            .into(image);
                     mViewFlipper.addView(image);
                 }
             }

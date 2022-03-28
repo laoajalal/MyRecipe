@@ -1,7 +1,5 @@
 package com.laoa.myrecipe.controller;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -18,6 +16,7 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.laoa.myrecipe.ActionBarTitleSetter;
 import com.laoa.myrecipe.R;
@@ -50,7 +49,6 @@ public class MainFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.list_of_labeled_recipe);
         addLabelButton = view.findViewById(R.id.add_label_button);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
 
@@ -156,25 +154,25 @@ public class MainFragment extends Fragment {
 
         private void UpdateImage(Recipe recipe, ImageView imageView) {
                 if (recipe.getFoodImagePaths().size() > 0) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(recipe.getFoodImagePaths().get(0));
-                    imageView.setImageBitmap(bitmap);
+                    Glide.with(getActivity())
+                            .load(recipe.getFoodImagePaths().get(0))
+                            .centerCrop()
+                            .into(imageView);
                 }
-
         }
 
-        public void bind(List<Recipe> recipe) {
-            if (recipe.size() >0) {
-                mRecipes = recipe;
-                typeOfFood = recipe.get(0).getTypeOfFood();
-                mTitleTextView.setText(typeOfFood);
+        public void bind(List<Recipe> recipe, String category) {
+            typeOfFood = category;
+            mTitleTextView.setText(typeOfFood);
 
+            if (recipe.size() > 0) {
+                mRecipes = recipe;
                 mLeftTextView.getLayoutParams().width = itemView.getWidth()/3;
                 mMiddleTextView.getLayoutParams().width = itemView.getWidth()/3;
                 mRightTextView.getLayoutParams().width = itemView.getWidth()/3;
                 mLeftTextView.requestLayout();
                 mMiddleTextView.requestLayout();
                 mRightTextView.requestLayout();
-
                 UpdateImageIfAvailable(recipe);
             }
         }
@@ -226,8 +224,9 @@ public class MainFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull RecipeHolder holder, int position) {
             System.out.println("Cathegory:" + mRecipeManager.getCategory(position));
-            List<Recipe> recipes = mRecipes.get(mRecipeManager.getCategory(position));
-            holder.bind(recipes);
+            System.out.println("position is:" + position);
+            System.out.println("Size of hashmap:" + mRecipes.size());
+            holder.bind(mRecipes.get(mRecipeManager.getCategory(position)), mRecipeManager.getCategory(position));
         }
 
         @Override

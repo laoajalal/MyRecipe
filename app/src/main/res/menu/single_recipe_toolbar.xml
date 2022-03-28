@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/app_bar_modify"
+        android:icon="@drawable/modify_icon"
+        android:title="Modify"
+        app:showAsAction="ifRoom"
+        />
+    <item
+        android:id="@+id/app_bar_favourite"
+        android:icon="@drawable/heart_icon"
+        android:title="Favourite"
+        app:showAsAction="ifRoom"
+        />
+    <item
+        android:id="@+id/app_bar_remove_item"
+        android:icon="@drawable/remove_icon"
+        android:title="Remove"
+        app:showAsAction="ifRoom"
+        />
+</menu>
