@@ -11,15 +11,20 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavBackStackEntry;
+import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -27,7 +32,6 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.laoa.myrecipe.ActionBarTitleSetter;
 import com.laoa.myrecipe.R;
-import com.laoa.myrecipe.controller.MainFragmentDirections;
 import com.laoa.myrecipe.databinding.FragmentRecipeBinding;
 import com.laoa.myrecipe.models.Recipe;
 import com.laoa.myrecipe.models.RecipeManager;
@@ -35,6 +39,11 @@ import com.laoa.myrecipe.models.RecipeManager;
 import java.util.UUID;
 
 
+/**
+ * When the user has clicked on a recipe inside the recyclerview, this class will be
+ * initialized. The class uses a pager to display information about the recipe in a user-friendly
+ * way.
+ * */
 public class RecipeFragment extends Fragment {
 
 
@@ -51,13 +60,10 @@ public class RecipeFragment extends Fragment {
     private String mCategory;
     private String mUUID;
 
-    public RecipeFragment() {
-        // Required empty public constructor
-    }
+    public RecipeFragment() {}
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        //super.onCreateOptionsMenu(R.menu.recipe_list_toolbar, inflater);
         inflater.inflate(R.menu.single_recipe_toolbar, menu);
     }
 
@@ -77,9 +83,27 @@ public class RecipeFragment extends Fragment {
         }
     }
 
+    /**
+     * When user presses the heart symbol in the top bar, the recipe object toggles its boolean
+     * value to specify if it is regarded as a favorite or not. After toggling, a toast message
+     * is displayed to prompt about the changes.
+     * */
     private void setRecipeToFavorite() {
+        if (!mRecipe.isFavourite()) {
+            mRecipe.setFavourite(true);
+            Toast.makeText(getActivity(), "Recipe set to favorites", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            mRecipe.setFavourite(false);
+            Toast.makeText(getActivity(), "Recipe removed from favorites", Toast.LENGTH_SHORT).show();
+        }
+        mRecipeManager.modifiedRecipe(mRecipe, mRecipe.getTypeOfFood());
     }
 
+    /**
+     * When the user press the modify symbol in the top bar, the fragment navigates to RecipeModifyFragment
+     * which enables the user to modify the current recipe.
+     * */
     private void modifyRecipe() {
         RecipeFragmentDirections.ActionRecipeFragmentToRecipeModifyFragment destination = RecipeFragmentDirections.actionRecipeFragmentToRecipeModifyFragment();
         destination.setCategory(mCategory);
@@ -102,39 +126,81 @@ public class RecipeFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
         mViewBinder = FragmentRecipeBinding.inflate(inflater, container, false);
         mRecipeManager = new ViewModelProvider(requireActivity()).get(RecipeManager.class);
 
         View view = mViewBinder.getRoot();
+        //Unpack the arguments that the previous fragment packed.
         mCategory = RecipeFragmentArgs.fromBundle(getArguments()).getGetCategory();
         mUUID = RecipeFragmentArgs.fromBundle(getArguments()).getGetUUID();
 
         ((ActionBarTitleSetter)getActivity()).setTitleActionBar(mCategory);
-
+        // The recipe is attained by using the unpacked data and call the RecipeManager.
         mRecipe = mRecipeManager.getRecipe(mCategory, UUID.fromString(mUUID));
 
-        Observer<UUID> modifiedRecipe = new Observer<UUID>() {
-            @Override
-            public void onChanged(UUID uuid) {
+        /**
+         * Observer that is called when a recipe has changed. The UUID is compared to the current
+         * recipe to check whether the this fragments recipe has been altered or not. If altered,
+         * update the current recipe.
+         * */
+        Observer<UUID> modifiedRecipe = uuid -> {
+            if (mRecipe != null) {
                 if (mRecipe.getUuid().compareTo(uuid) == 0)
                 {
                     mRecipe = mRecipeManager.getRecipe(uuid);
                     ((ActionBarTitleSetter)requireActivity()).setTitleActionBar(mRecipe.getTypeOfFood());
                 }
-
             }
-        };
-        mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(),modifiedRecipe);
-        mViewPager2 = mViewBinder.viewpagerFragmentRecipe;
 
+        };
+
+        mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(), modifiedRecipe);
+        mViewPager2 = mViewBinder.viewpagerFragmentRecipe;
 
         return view;
     }
 
+    /**
+     * Ensures that the correct backstack entry is attained. This is needed because
+     * We navigate to a dialog which does not switch the current lifecycle to pause.
+     * */
+    private void setBackStackListener() {
+
+        NavController navController = NavHostFragment.findNavController(this);
+
+        final NavBackStackEntry navBackStackEntry = navController.getCurrentBackStackEntry();
+
+        final LifecycleEventObserver observer = (source, event) -> {
+            if (event.equals(Lifecycle.Event.ON_RESUME)
+                    && navBackStackEntry.getSavedStateHandle().contains(RecipeStartFragment.CATEGORY_ARG)
+                    && navBackStackEntry.getSavedStateHandle().contains(RecipeStartFragment.UUID_ARG))
+            {
+                String category = navBackStackEntry.getSavedStateHandle().get(RecipeStartFragment.CATEGORY_ARG);
+                String uuid = navBackStackEntry.getSavedStateHandle().get(RecipeStartFragment.UUID_ARG);
+                mRecipe = mRecipeManager.getRecipe(category, UUID.fromString(uuid));
+                mPageAdapterRecipe = new PageAdapterRecipe(getChildFragmentManager(), getLifecycle(), mRecipe);
+                mViewPager2.setAdapter(mPageAdapterRecipe);
+            }
+
+        };
+        navBackStackEntry.getLifecycle().addObserver(observer);
+
+        getViewLifecycleOwner().getLifecycle().addObserver((LifecycleEventObserver) (source, event) -> {
+            if (event.equals(Lifecycle.Event.ON_DESTROY))
+                navBackStackEntry.getLifecycle().removeObserver(observer);
+        });
+
+    }
+
+    /**
+     * Sets the adapter to the pager and creates the tabs which can be used to switch between the fragments
+     * inside the pager.
+     * */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -150,8 +216,13 @@ public class RecipeFragment extends Fragment {
                 tab.setText("Steps");
         }).attach();
 
+        setBackStackListener();
     }
 
+    /**
+     * Creates a small pop-up window that gives the option of removing a recipe.
+     * This method is called when the remove symbol on the top bar is pressed.
+     * */
     private void popUpWindowRemoveRecipe() {
         View popUp = LayoutInflater.from(getActivity()).inflate(R.layout.popup_window_remove, null);
         final PopupWindow popupWindow = new PopupWindow(
@@ -174,9 +245,12 @@ public class RecipeFragment extends Fragment {
         });
     }
 
-
-
 }
+    /**
+     * Pager class that creates three different fragments, one start fragment which displays
+     * the overview of the recipe. The second fragment shows the ingredients in a list.
+     * The third fragment displays the steps for creating the recipe.
+     * */
     class PageAdapterRecipe extends FragmentStateAdapter {
 
     private Recipe mRecipe;
@@ -184,9 +258,7 @@ public class RecipeFragment extends Fragment {
     public PageAdapterRecipe(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle, Recipe recipe) {
         super(fragmentManager, lifecycle);
         mRecipe = recipe;
-
     }
-
 
     @NonNull
     @Override

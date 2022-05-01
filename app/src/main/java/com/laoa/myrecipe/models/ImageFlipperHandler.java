@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * A class used to handle tracking of the images inside the viewFlipper.
+ * */
 public class ImageFlipperHandler extends ViewModel implements ChangeView{
 
     private List<File> mImagesInsideViewFlipper;
@@ -18,29 +21,30 @@ public class ImageFlipperHandler extends ViewModel implements ChangeView{
     int currentSize = 0;
 
     public ImageFlipperHandler(SavedStateHandle savedStateHandle) {
-        mImagesInsideViewFlipper = new ArrayList<>();
-        mCurrentImagePath = new MutableLiveData<>();
 
-        if (savedStateHandle == null) {
-            //TODO:FIX APPROPRIATE
-        }
-        else {
+            mImagesInsideViewFlipper = new ArrayList<>();
+            mCurrentImagePath = new MutableLiveData<>();
             mSavedStateHandle = savedStateHandle;
-            getState(mSavedStateHandle);
-        }
-
+            getState(savedStateHandle);
     }
 
-    private void getState(SavedStateHandle savedStateHandle) {
 
+    public void getState(SavedStateHandle savedStateHandle) {
+        System.out.println("updating state");
         if (savedStateHandle!=null) {
-            //mImagesInsideViewFlipper = mSavedStateHandle.get("current_Map");
-
+            if (savedStateHandle.get("paths") != null) {
+                for (String path : (ArrayList<String>) savedStateHandle.get("paths")) {
+                    mImagesInsideViewFlipper.add(new File(path));
+                }
+            }
+            if (savedStateHandle.get("current_photo") != null)
+                mCurrentImagePath.setValue(new File( (String) savedStateHandle.get("current_photo")));
+            if (savedStateHandle.get("size") != null)
+                currentSize = savedStateHandle.get("size");
+            else
+                currentSize = 0;
         }
-    }
 
-    public void reset() {
-        mImagesInsideViewFlipper.clear();
     }
 
     /**
@@ -48,11 +52,30 @@ public class ImageFlipperHandler extends ViewModel implements ChangeView{
      * onSaveInstanceState.
      * */
     public void setState() {
-        if (mSavedStateHandle!=null) {
-            mSavedStateHandle.set("current_map", mImagesInsideViewFlipper);
-            mSavedStateHandle.set("current_path", mCurrentImagePath);
+        if (mSavedStateHandle != null) {
+            System.out.println("savedstatehandle not null");
+            ArrayList<String> temp = new ArrayList();
+            for (File path : mImagesInsideViewFlipper) {
+                System.out.println("FILE PATH: " + path.toString());
+                temp.add(path.toString());
+            }
+            mSavedStateHandle.set("paths", temp);
+            if (mCurrentImagePath.getValue() != null)
+                mSavedStateHandle.set("current_photo", mCurrentImagePath.getValue().toString());
+
+            mSavedStateHandle.set("size", currentSize);
         }
+
     }
+
+
+    /**
+     * Reset the list of paths that should be correlated to the viewFlipper.
+     * */
+    public void reset() {
+        mImagesInsideViewFlipper.clear();
+    }
+
 
     public List<String> getImagesAbsolutePaths() {
         List<String> absPath = new ArrayList<>();
@@ -65,10 +88,6 @@ public class ImageFlipperHandler extends ViewModel implements ChangeView{
 
     public List<File> getFilePathsImages() {
         return mImagesInsideViewFlipper;
-    }
-
-    public MutableLiveData<File> getCurrentFileLiveData() {
-        return mCurrentImagePath;
     }
 
     /**

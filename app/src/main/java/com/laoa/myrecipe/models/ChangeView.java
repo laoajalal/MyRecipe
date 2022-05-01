@@ -2,6 +2,10 @@ package com.laoa.myrecipe.models;
 
 import java.io.File;
 
+
+/**
+ * Interface used to create a custom ViewFlipper.
+ * */
 public interface ChangeView {
     void setNext();
     void setPrevious();

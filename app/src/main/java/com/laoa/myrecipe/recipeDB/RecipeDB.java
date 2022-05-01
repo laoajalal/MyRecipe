@@ -10,6 +10,7 @@ import androidx.room.TypeConverters;
 import com.laoa.myrecipe.models.Recipe;
 import com.laoa.myrecipe.utils.StringListConverter;
 
+
 @Database(entities = {Recipe.class}, version = 3, exportSchema = true)
 @TypeConverters(StringListConverter.class)
 public abstract class RecipeDB extends RoomDatabase {

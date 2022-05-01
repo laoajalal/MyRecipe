@@ -1,11 +1,8 @@
 package com.laoa.myrecipe.controller.SingleRecipeDisplay;
 
-import android.content.Context;
-import android.media.Image;
 import android.os.Bundle;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -28,7 +25,17 @@ import com.laoa.myrecipe.utils.OnSwipeListener;
 
 import java.util.UUID;
 
+
+/**
+ * This class is the first of the fragment inside the Pager from RecipeFragment.
+ * This Fragment displays the food pictures, recipe name, the recipes category,
+ * description and cooking time.
+ * */
 public class RecipeStartFragment extends Fragment {
+
+    public static final String UUID_ARG = "get_uid";
+    public static final String CATEGORY_ARG = "get_category";
+
 
     private Recipe mRecipe;
     private RecipeManager mRecipeManager;
@@ -36,7 +43,6 @@ public class RecipeStartFragment extends Fragment {
 
     private GestureDetector mOnTouchParentScrollListener;
     private GestureDetector mOnTouchChildScrollListener;
-    private GestureDetector mOnTouchViewFlipper;
 
     private String category;
     private String uuid;
@@ -53,37 +59,14 @@ public class RecipeStartFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Bundle bundle = this.getArguments();
-        if (bundle != null) {
-            category = (String) bundle.get(RecipeFragment.RECIPE_CATEGORY);
-            uuid = (String) bundle.get(RecipeFragment.RECIPE_UUID);
-        }
 
         mRecipeManager = new ViewModelProvider(requireActivity()).get(RecipeManager.class);
-        mRecipe = mRecipeManager.getRecipe(category, UUID.fromString(uuid));
-
 
         mViewBinder = FragmentRecipeOverviewBinding.inflate(inflater,container, false);
         View view = mViewBinder.getRoot();
         initWidgets();
-        updateUI(mRecipe);
         setChangeImageListeners();
         setScrollViewConfiguration();
-
-
-        Observer<UUID> recipeModifiedObserver = new Observer<UUID>() {
-            @Override
-            public void onChanged(UUID uuid) {
-                if (mRecipe.getUuid().compareTo(uuid) == 0)
-                {
-                    mRecipe = mRecipeManager.getRecipe(uuid);
-                    mViewFlipper.removeAllViews();
-                    updateUI(mRecipe);
-                }
-            }
-        };
-
-        mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(), recipeModifiedObserver);
 
         return view;
     }
@@ -93,18 +76,49 @@ public class RecipeStartFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        Bundle bundle = this.getArguments();
+        if (bundle != null) {
+            category = (String) bundle.get(RecipeFragment.RECIPE_CATEGORY);
+            uuid = (String) bundle.get(RecipeFragment.RECIPE_UUID);
+        }
+        mRecipe = mRecipeManager.getRecipe(category, UUID.fromString(uuid));
+        updateUI(mRecipe);
 
+        recipeModifiedListener();
+    }
 
+    /**
+     * If the recipe has been changed in any fields, update the UI,
+     * */
+    private void recipeModifiedListener() {
+        Observer<UUID> recipeModifiedObserver = uuid -> {
+            if (mRecipe!=null) {
+                if (mRecipe.getUuid().compareTo(uuid) == 0)
+                {
+                    mRecipe = mRecipeManager.getRecipe(uuid);
+                    mViewFlipper.removeAllViews();
+                    updateUI(mRecipe);
+                }
+            }
+
+        };
+        mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(), recipeModifiedObserver);
     }
 
     private void updateUI(Recipe recipe) {
-        setRecipeName(recipe);
-        setCookTime(recipe);
-        setCategory(recipe);
-        setDescription(recipe);
-        setImages(recipe);
+        if (recipe!=null) {
+            setRecipeName(recipe);
+            setCookTime(recipe);
+            setCategory(recipe);
+            setDescription(recipe);
+            setImages(recipe);
+        }
     }
 
+    /**
+     * Sets the images to the ViewFlipper. If there is no image,
+     * An image icon will be used to show that theres is no image set.
+     * */
     private void setImages(Recipe recipe) {
         if (recipe.getFoodImagePaths().size()>0) {
             mViewFlipper.setBackground(null);
@@ -169,6 +183,12 @@ public class RecipeStartFragment extends Fragment {
 
     }
 
+    /**
+     * Because we use pagers and scrollviews, there will be conflicts in which
+     * container and view that should be focused when touched upon. This
+     * method handles the case when the user wants to swipe right/left between
+     * fragments and scroll horizontally inside the current fragment.
+     * */
     private GestureDetector createMotionDetector(ViewParent scroller) {
 
         GestureDetector gestureDetector = new GestureDetector(getActivity(), new OnSwipeListener() {

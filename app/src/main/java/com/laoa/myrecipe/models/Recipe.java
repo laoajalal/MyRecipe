@@ -1,6 +1,9 @@
 package com.laoa.myrecipe.models;
 
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Ignore;
@@ -10,8 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * The class contains information to model a recipe.
+ * This class is an entity inside the Room-database
+ * */
 @Entity(tableName = "recipe_table")
-public class Recipe {
+public class Recipe implements Parcelable {
 
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -40,6 +47,33 @@ public class Recipe {
     private List<String> recipeSteps;
 
     private boolean isFavourite;
+    private UUID uuid;
+
+    protected Recipe(Parcel in) {
+        id = in.readInt();
+        recipeName = in.readString();
+        preperationTime = in.readInt();
+        cookTime = in.readInt();
+        typeOfFood = in.readString();
+        description = in.readString();
+        foodImagePaths = in.createStringArrayList();
+        ingredients = in.createStringArrayList();
+        recipeSteps = in.createStringArrayList();
+        isFavourite = in.readByte() != 0;
+        uuid = (UUID) in.readSerializable();
+    }
+
+    public static final Creator<Recipe> CREATOR = new Creator<Recipe>() {
+        @Override
+        public Recipe createFromParcel(Parcel in) {
+            return new Recipe(in);
+        }
+
+        @Override
+        public Recipe[] newArray(int size) {
+            return new Recipe[size];
+        }
+    };
 
     public String getTypeOfFood() {
         return typeOfFood;
@@ -57,7 +91,7 @@ public class Recipe {
         isFavourite = favourite;
     }
 
-    private UUID uuid;
+
 
     public void setId(int id) {
         this.id = id;
@@ -131,9 +165,6 @@ public class Recipe {
         this.recipeSteps = recipeSteps;
     }
 
-    public void addFoodImagePath(String foodImages) {
-        this.foodImagePaths.add(foodImages);
-    }
 
     public String getDescription() {
         return description;
@@ -147,16 +178,28 @@ public class Recipe {
         return ingredients;
     }
 
-    public void addIngredients(String ingredients) {
-        this.ingredients.add(ingredients);
-    }
 
     public List<String> getRecipeSteps() {
         return recipeSteps;
     }
 
-    public void addRecipeStep(String recipeSteps) {
-        this.recipeSteps.add(recipeSteps);
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeInt(id);
+        parcel.writeString(recipeName);
+        parcel.writeInt(preperationTime);
+        parcel.writeInt(cookTime);
+        parcel.writeString(typeOfFood);
+        parcel.writeString(description);
+        parcel.writeStringList(foodImagePaths);
+        parcel.writeStringList(ingredients);
+        parcel.writeStringList(recipeSteps);
+        parcel.writeByte((byte) (isFavourite ? 1 : 0));
+        parcel.writeSerializable(uuid);
+    }
 }

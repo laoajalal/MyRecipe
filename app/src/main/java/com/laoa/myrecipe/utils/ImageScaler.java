@@ -3,15 +3,13 @@ package com.laoa.myrecipe.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.widget.ImageView;
 
+import androidx.exifinterface.media.ExifInterface;
+
 import java.io.File;
 import java.io.IOException;
-
-//import android.media.ExifInterface;
-
 
 /**
  * Utility class provided in lecture slides, used to properly scale image asynchronous.

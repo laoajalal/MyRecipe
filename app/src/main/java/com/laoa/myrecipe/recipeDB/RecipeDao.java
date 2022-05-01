@@ -1,9 +1,11 @@
 package com.laoa.myrecipe.recipeDB;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import com.laoa.myrecipe.models.Recipe;
 
@@ -13,7 +15,7 @@ import java.util.List;
 public interface RecipeDao {
 
     @Query("SELECT * FROM recipe_table ORDER BY id ASC")
-    List<Recipe> loadAllRecipies();
+    LiveData<List<Recipe>> loadAllRecipies();
 
     @Insert
     void insertRecipe(Recipe... recipe);
@@ -23,5 +25,8 @@ public interface RecipeDao {
 
     @Query("DELETE FROM recipe_table")
     void delete();
+
+    @Update
+    void update(Recipe... recipe);
 
 }

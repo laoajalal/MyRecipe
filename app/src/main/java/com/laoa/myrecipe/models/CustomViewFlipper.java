@@ -11,7 +11,8 @@ import java.util.Map;
 
 
 /**
- * Custom ViewFlipper class that adds a way for the ImageFlipperHandler to communicate with the ViewFlipper
+ * Custom ViewFlipper class that adds a way for the ImageFlipperHandler to communicate with the ViewFlipper.
+ * This helps when saving,removing or modifying images inside the viewFlipper.
  * */
 public class CustomViewFlipper extends ViewFlipper {
 
@@ -58,7 +59,6 @@ public class CustomViewFlipper extends ViewFlipper {
     public void addView(View child, File path) {
         int pos = mChangeView.getPathPos(path);
         super.addView(child, pos);
-        System.out.println("Position of image:"+ pos);
         mChangeView.addViewPath(path);
         mapOfPhotos.put(path, child);
     }

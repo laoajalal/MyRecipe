@@ -1,6 +1,9 @@
 package com.laoa.myrecipe;
 
+/**
+ * Used to update the title of the actionbar.
+ * */
 public interface ActionBarTitleSetter {
 
-    public void setTitleActionBar(String title);
+    void setTitleActionBar(String title);
 }

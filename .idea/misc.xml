@@ -3,6 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Laoa/AndroidStudioProjects/MyRecipe/app/src/main/res/layout/simple_spinner_dropdown_item.xml" value="0.15081521739130435" />
+        <entry key="..\:/Users/Laoa/AndroidStudioProjects/MyRecipe/app/src/main/res/layout/single_food_display.xml" value="0.15443840579710144" />
+        <entry key="..\:/Users/Laoa/AndroidStudioProjects/MyRecipe/app/src/main/res/menu/recipe_main_toolbar.xml" value="0.20104166666666667" />
         <entry key="..\:/Users/laoa9/AndroidStudioProjects/MyRecipe/app/src/main/res/layout-land/fragment_recipe_overview.xml" value="0.17548500881834214" />
         <entry key="..\:/Users/laoa9/AndroidStudioProjects/MyRecipe/app/src/main/res/layout/activity_main.xml" value="0.22826086956521738" />
         <entry key="..\:/Users/laoa9/AndroidStudioProjects/MyRecipe/app/src/main/res/layout/add_new_type.xml" value="0.14427083333333332" />

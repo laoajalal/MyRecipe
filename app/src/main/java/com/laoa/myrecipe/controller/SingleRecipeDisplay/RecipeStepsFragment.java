@@ -21,6 +21,9 @@ import com.laoa.myrecipe.models.RecipeManager;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Similar to the ingredientFragment, displays the steps in a ListView.
+ * */
 public class RecipeStepsFragment extends Fragment {
     private String category;
     private String uuid;
@@ -47,25 +50,28 @@ public class RecipeStepsFragment extends Fragment {
         mRecipe = mRecipeManager.getRecipe(category, UUID.fromString(uuid));
         mSteps = mRecipe.getRecipeSteps();
 
-        arrayAdapter = new ArrayAdapter(getActivity(), R.layout.fragment_recipe_ingredients_item, R.id.single_ingredient_textview, mSteps);
         mViewBinder = FragmentRecipeIngredientsBinding.inflate(inflater,container, false);
-
-        mListView = mViewBinder.listItemIngredients;
-        mListView.setAdapter(arrayAdapter);
-
         View view = mViewBinder.getRoot();
 
-        Observer<UUID> hasRecipeBeenModified = new Observer<UUID>() {
-            @Override
-            public void onChanged(UUID uuid) {
-                if (mRecipe.getUuid().compareTo(uuid) == 0)
-                {
-                    arrayAdapter.notifyDataSetChanged();
-                }
+        configureListViewAdapter(mViewBinder.listItemIngredients);
+        hasRecipeChangedObserver();
+
+        return view;
+    }
+
+    private void configureListViewAdapter(ListView listView) {
+        arrayAdapter = new ArrayAdapter(getActivity(), R.layout.fragment_recipe_ingredients_item, R.id.single_ingredient_textview, mSteps);
+        listView.setAdapter(arrayAdapter);
+    }
+
+    private void hasRecipeChangedObserver() {
+        Observer<UUID> hasRecipeBeenModified = uuid -> {
+            if (mRecipe.getUuid().compareTo(uuid) == 0)
+            {
+                arrayAdapter.notifyDataSetChanged();
             }
         };
         mRecipeManager.getRecipeModified().observe(getViewLifecycleOwner(), hasRecipeBeenModified);
 
-        return view;
     }
 }

@@ -2,6 +2,7 @@ package com.laoa.myrecipe.controller;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,7 +46,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
+
+/**
+ * A Dialog class which is created when the user wants to add a new recipe.
+ * */
 public class RecipeAddFragment extends DialogFragment {
 
 
@@ -87,7 +93,17 @@ public class RecipeAddFragment extends DialogFragment {
             IS_ADD_CATEGORY_WINDOW_OPEN = (boolean) savedInstanceState.get("window_category_add");
             IS_REMOVE_IMAGE_WINDOW_OPEN = (boolean) savedInstanceState.get("window_image_remove");
 
+            if (savedInstanceState.get("current_file") != null) {
+                currentFile = (File) savedInstanceState.get("current_file");
+            }
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (this.isRemoving())
+            mImageFlipperHandler.reset();
     }
 
     @Nullable
@@ -112,36 +128,22 @@ public class RecipeAddFragment extends DialogFragment {
         initWidgets();
         configureSpinnerAdapter(mRecipeManager.getCategories());
 
-        setSaveButtonListener();
-        setCancelButtonListener();
         removeImageListener();
         addNewTypeListener();
 
-        Observer<List<String>> categoriesAdded = new Observer<List<String>>() {
-            @Override
-            public void onChanged(List<String> strings) {
-                for (String string: strings) {
-                    System.out.println(string);
-                }
-                if (getActivity()!=null)
-                    configureSpinnerAdapter(strings);
+        newCategoryObserver();
 
-                }
+        setViewOnClickListeners();
+        windowFocusListener(view);
 
-        };
+        return view;
+    }
 
-        mRecipeManager.getCategoriesMutableLiveData().observe(getActivity(),categoriesAdded);
-
-        mViewFlipper.setChangeViewListener(mImageFlipperHandler);
-
-        mLeftArrow.setOnClickListener(view1 -> mViewFlipper.showPrevious());
-
-        mRightArrow.setOnClickListener(view12 -> mViewFlipper.showNext());
-
-        mCamera.setOnClickListener(view13 -> takePicture());
-
-
-
+    /**
+     * Listens to the changes in WindowFocus. This is used to get runtime width and height value of the image
+     * that is created inside the ViewFlipper. This also handles the scenario when the phone goes from portrait to landscape.
+     * */
+    private void windowFocusListener(View view) {
         view.getViewTreeObserver().addOnWindowFocusChangeListener( hasFocus -> {
             for (File path : mImageFlipperHandler.getFilePathsImages() ) {
                 if (path != null && path.exists() && hasFocus && !mViewFlipper.alreadyDisplayed(path))
@@ -150,8 +152,29 @@ public class RecipeAddFragment extends DialogFragment {
                 }
             }
         });
+    }
 
-        return view;
+    private void setViewOnClickListeners() {
+
+        mViewFlipper.setChangeViewListener(mImageFlipperHandler);
+        mLeftArrow.setOnClickListener(view1 -> mViewFlipper.showPrevious());
+        mRightArrow.setOnClickListener(view12 -> mViewFlipper.showNext());
+        mCamera.setOnClickListener(view13 -> takePicture());
+
+        setSaveButtonListener();
+        setCancelButtonListener();
+    }
+
+    /**
+     * When user has created a new category, the spinner is updated with the
+     * new category as an option to chose from.
+     * */
+    private void newCategoryObserver() {
+        Observer<List<String>> categoriesAdded = strings -> {
+            if (getActivity() != null)
+                configureSpinnerAdapter(mRecipeManager.getCategories());
+        };
+        mRecipeManager.getCategoriesMutableLiveData().observe(getViewLifecycleOwner(), categoriesAdded);
     }
 
     public void setSaveButtonListener() {
@@ -174,6 +197,9 @@ public class RecipeAddFragment extends DialogFragment {
             NavHostFragment.findNavController(RecipeAddFragment.this).popBackStack();
     }
 
+    /**
+     * When cancel button pressed, just reset the imageFlipperHandler and pop stack.
+     * */
     public void setCancelButtonListener() {
         mCancelButton.setOnClickListener(view -> {
             mImageFlipperHandler.reset();
@@ -182,6 +208,12 @@ public class RecipeAddFragment extends DialogFragment {
     }
 
 
+
+    /**
+     * Validates input before enabling saving to RecipeManager. Checks whether
+     * The time is in correct format, the recipe has a name and if the recipe
+     * belongs to a category.
+     * */
     private boolean checkInput() {
         String time = mCookTime.getText().toString();
         Boolean isValid = true;
@@ -204,6 +236,11 @@ public class RecipeAddFragment extends DialogFragment {
         return isValid;
     }
 
+    /**
+     * Extracts the information written to the EditText-fields and returns an Recipe object
+     * with the fields updated accordingly to the extracted information.
+     * @return Recipe
+     * */
     public Recipe getSavedRecipe() {
         Recipe recipe = new Recipe();
         recipe.setRecipeName(getEditTextAsString(mRecipeName));
@@ -244,22 +281,23 @@ public class RecipeAddFragment extends DialogFragment {
 
     }
 
+
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         mViewFlipper = null;
-        mImageFlipperHandler.reset();
         viewBinder = null;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
+    /**
+     * Configures the spinner adapter that displays the categories.
+     * */
     private void configureSpinnerAdapter(List<String> categories) {
+
+        List<String> noDuplicates = categories.stream().distinct().collect(Collectors.toList());
         mSpinnerAdapter = new ArrayAdapter(getActivity(),
-                android.R.layout.simple_spinner_item, categories);
+                android.R.layout.simple_spinner_item, noDuplicates);
         mSpinnerAdapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item);
         mCategory.setAdapter(mSpinnerAdapter);
         mCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -312,30 +350,43 @@ public class RecipeAddFragment extends DialogFragment {
         super.onSaveInstanceState(outState);
         outState.putBoolean("window_category_add", IS_ADD_CATEGORY_WINDOW_OPEN);
         outState.putBoolean("window_image_remove", IS_REMOVE_IMAGE_WINDOW_OPEN);
+        mImageFlipperHandler.setState();
+        if (currentFile != null)
+            outState.putSerializable("current_file", currentFile);
     }
 
+    /**
+     * When user wants to take picture. Launches the camera activity.
+     * If the device does not have a camera, do nothing.
+     * */
     private void takePicture() {
-
-        try {
-            currentFile = createImageFile();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        if (currentFile != null) {
-            Uri photoURI = FileProvider.getUriForFile(getActivity(),
-                    "com.laoa.myrecipe",
-                    currentFile
-            );
-            startActivityCamera.launch(photoURI);
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            try {
+                currentFile = createImageFile();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            if (currentFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(getActivity(),
+                        "com.laoa.myrecipe",
+                        currentFile
+                );
+                startActivityCamera.launch(photoURI);
+            }
         }
     }
 
-    // TODO: Generate callback
+
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
     }
 
+    /**
+     * Used to create Unique files for the photos taken. Uses dataformat to name the
+     * image-files.
+     * @return File
+     * */
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -360,6 +411,7 @@ public class RecipeAddFragment extends DialogFragment {
                  result -> {
                      if (result) {
                         mImageFlipperHandler.addViewPath(currentFile);
+                         System.out.println("adding image ");
                      }
                  });
 
@@ -371,12 +423,16 @@ public class RecipeAddFragment extends DialogFragment {
         super.onStart();
         if (getDialog() == null)
             return;
-
+        // Make the dialog layout take the majority of the screen.
         getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
     }
 
 
+    /**
+     * When user wants to remove a picture, a pop-up window is prompted
+     * with the given option.
+     * */
     private void popUpWindowRemovePicture() {
         IS_REMOVE_IMAGE_WINDOW_OPEN = true;
         View popUp = LayoutInflater.from(getActivity()).inflate(R.layout.popup_window_remove, null);
@@ -399,6 +455,11 @@ public class RecipeAddFragment extends DialogFragment {
         });
     }
 
+    /**
+     * When the user wants to add a new category, a pop-up window
+     * is created that provides the option to insert a category name
+     * and save the category.
+     * */
     private void popUpWindowAddNewCategory() {
         IS_ADD_CATEGORY_WINDOW_OPEN = true;
         View popUp = LayoutInflater.from(getActivity()).inflate(R.layout.add_new_type, null);
@@ -423,6 +484,7 @@ public class RecipeAddFragment extends DialogFragment {
             }
             else {
                 mRecipeManager.setCategory(editText.getText().toString());
+
                 IS_ADD_CATEGORY_WINDOW_OPEN = false;
                 popupWindow.dismiss();
             }
@@ -431,18 +493,26 @@ public class RecipeAddFragment extends DialogFragment {
 
     }
 
-
+    /**
+     * When the user long clicks on the viewFlipper, a pop-up window
+     * will be shown which gives to option to remove the current viewed
+     * image inside the ViewFlipper.
+     * */
     private void removeImageListener() {
 
-        mViewFlipper.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
+        mViewFlipper.setOnLongClickListener(view -> {
+            if (mViewFlipper.getCurrentView() != null) {
                 popUpWindowRemovePicture();
                 return true;
             }
+            return false;
         });
     }
 
+    /**
+     * When user wants to add a new type, a pop-up window
+     * is shown which gives the option to add a new category.
+     * */
     private void addNewTypeListener() {
 
         mAddnewTypeButton.setOnClickListener(view -> {
@@ -451,8 +521,16 @@ public class RecipeAddFragment extends DialogFragment {
 
     }
 
-
-
+    /**
+     * @param width
+     * @param  height
+     * @param currentPhotoFile
+     *
+     * Displays the currentPhotoFile inside the viewFlipper. The
+     * Image is processed inside a background thread to reduce
+     * UI-lag. When the Image has been processed, the viewFlipper is
+     * notified and adds the ImageView.
+     * */
     private void displayImage(int width, int height, File currentPhotoFile) {
 
         ImageView photo = new ImageView(getActivity());
@@ -463,7 +541,7 @@ public class RecipeAddFragment extends DialogFragment {
             public void update(ImageView photo) {
                 if (photo!=null) {
                     mViewFlipper.addView(photo, currentPhotoFile);
-                    imageScaler.removeListener(); // avoid memory leaks
+                    imageScaler.removeListener();
                 }
             }
         });
